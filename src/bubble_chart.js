@@ -12,23 +12,23 @@ function bubbleChart() {
   var height = 600;
 
   // tooltip for mouseover functionality
-  var tooltip = floatingTooltip('gates_tooltip', 240);
+  var tooltip = floatingTooltip('opinions_tooltip', 240);
 
   // Locations to move bubbles towards, depending
   // on which view mode is selected.
-  var center = { x: width / 2, y: height / 2 };
+  var center = { x: width/2 , y: height/2 };
 
   var yearCenters = {
-    2008: { x: width / 3, y: height / 2 },
-    2009: { x: width / 2, y: height / 2 },
-    2010: { x: 2 * width / 3, y: height / 2 }
+    'rosemary': { x: width / 5, y: height/2  },
+    'Brian': { x: width / 5, y: height/2  },
+    'Paul': { x: width / 5, y: height/2 }
   };
 
   // X locations of the year titles.
   var yearsTitleX = {
-    2008: 160,
-    2009: width / 2,
-    2010: width - 160
+    'rosemary': 160,
+    'Brian': width / 2,
+    'Paul': width - 160
   };
 
   // @v4 strength to apply to the position forces
@@ -55,6 +55,7 @@ function bubbleChart() {
   //  of the force layout. Now we can use it as a separate force!
   function charge(d) {
     return -Math.pow(d.radius, 2.0) * forceStrength;
+
   }
 
   // Here we create a force layout and
@@ -74,8 +75,8 @@ function bubbleChart() {
   // Nice looking colors - no reason to buck the trend
   // @v4 scales now have a flattened naming scheme
   var fillColor = d3.scaleOrdinal()
-    .domain(['low', 'medium', 'high'])
-    .range(['#d84b2a', '#beccae', '#7aa25c']);
+    .domain(['0', '50', '100'])
+    .range(['red', '#beccae', 'green']);
 
 
   /*
@@ -93,29 +94,34 @@ function bubbleChart() {
   function createNodes(rawData) {
     // Use the max total_amount in the data as the max in the scale's domain
     // note we have to ensure the total_amount is a number.
-    var maxAmount = d3.max(rawData, function (d) { return +d.total_amount; });
-
+    //console.log(rawData);
+    var maxAmount = d3.max(rawData, function (d) { return +d.percentageuploaded; });
+    console.log(maxAmount);
     // Sizes bubbles based on area.
     // @v4: new flattened scale names.
     var radiusScale = d3.scalePow()
       .exponent(0.5)
-      .range([2, 85])
+      .range([0, 85])
       .domain([0, maxAmount]);
 
     // Use map() to convert raw data into node data.
     // Checkout http://learnjsdata.com/ for more on
     // working with data.
     var myNodes = rawData.map(function (d) {
+      ///console.log(d);
       return {
         id: d.id,
-        radius: radiusScale(+d.total_amount),
-        value: +d.total_amount,
-        name: d.grant_title,
-        org: d.organization,
-        group: d.group,
-        year: d.start_year,
+        radius: radiusScale(+d.percentageuploaded),
+        value: +d.percentageuploaded,
+        percentage: +d.percentageuploaded,
+        name: d.branch,
+        org: 'UNEP',
+        group: "CSD",
+        origin: "rosemary",
+        year: d.total,
         x: Math.random() * 900,
-        y: Math.random() * 800
+        y: Math.random() * 800,
+        text:"circle text"
       };
     });
 
@@ -151,21 +157,58 @@ function bubbleChart() {
 
     // Bind nodes data to what will become DOM elements to represent them.
     bubbles = svg.selectAll('.bubble')
-      .data(nodes, function (d) { return d.id; });
+      .data(nodes, function (d) { return d.id; })
+      //  .append('g')
+      // .classed('bubble', true)
+      //  .attr("transform", d => `translate(${d.x}, ${d.y})`)
+      //   .attr('r', function (d) { return 0; });
+      
+      
+
 
     // Create new circle elements each with class `bubble`.
     // There will be one circle.bubble for each object in the nodes array.
     // Initially, their radius (r attribute) will be 0.
     // @v4 Selections are immutable, so lets capture the
     //  enter selection to apply our transtition to below.
-    var bubblesE = bubbles.enter().append('circle')
+
+   var bubblesE = bubbles.enter().append('circle')
+   .attr('fill', function (d) { return Customfill(d.percentage); })
       .classed('bubble', true)
-      .attr('r', 0)
-      .attr('fill', function (d) { return fillColor(d.group); })
-      .attr('stroke', function (d) { return d3.rgb(fillColor(d.group)).darker(); })
-      .attr('stroke-width', 2)
-      .on('mouseover', showDetail)
-      .on('mouseout', hideDetail);
+    .attr('r', function (d) { return d.radius; })
+    .attr('fill', function (d) { return Customfill(d.percentage); })
+    .attr('stroke', function (d) { return d3.rgb(fillColor(d.percentage)).darker(); })
+    .attr('alignment-baseline', 'middle')
+     .attr('text-anchor', 'middle')
+  .attr('alignment-baseline', 'middle')
+  .style('font-size', d => d.radius * 0.4 + 'px')
+  .style('color', d => 'blue')
+  .attr('fill-opacity', 1)
+  .on('mouseover', showDetail)
+    .on('mouseout', hideDetail)
+    .on('click', showModal);
+
+
+texts = bubbles.append('text')
+  .attr('text-anchor', 'middle')
+  .attr('alignment-baseline', 'middle')
+  .style('font-size', d => d.radius * 0.4 + 'px')
+  .attr('fill-opacity', 1)
+  .attr('fill', 'blue')
+  .text("TGDTG")
+
+
+
+      // .attr('text-anchor', 'middle')
+      // .classed('bubble', true)
+      // .attr('r', 0)
+      // .attr('alignment-baseline', 'middle')
+      // .style('font-size', d => d.radius * 0.4 + 'px')
+      // .attr('fill', function (d) { return fillColor(d.group); })
+      // .attr('stroke', function (d) { return d3.rgb(fillColor(d.group)).darker(); })
+      // .attr('stroke-width', 2)
+      // .text(d => d.text)
+    
 
     // @v4 Merge the original empty selection and the enter selection
     bubbles = bubbles.merge(bubblesE);
@@ -174,7 +217,10 @@ function bubbleChart() {
     // correct radius
     bubbles.transition()
       .duration(2000)
-      .attr('r', function (d) { return d.radius; });
+      // .append('g')
+      // .classed('bubble', true)
+      //  .attr("transform", d => `translate(${d.x}, ${d.y})`)
+      //   .attr('r', function (d) { return 0; });
 
     // Set the simulation's nodes to our newly created nodes array.
     // @v4 Once we set the nodes, the simulation will start running automatically!
@@ -183,6 +229,8 @@ function bubbleChart() {
     // Set initial layout to single group.
     groupBubbles();
   };
+
+
 
   /*
    * Callback function that is called after every tick of the
@@ -202,7 +250,19 @@ function bubbleChart() {
    * x force.
    */
   function nodeYearPos(d) {
-    return yearCenters[d.year].x;
+    return yearCenters[d.origin].x;
+  }
+
+  function Customfill(v){
+    if(v>75){
+      return 'green';
+    }
+    else if(v>40){
+      return 'brown';
+    }else{
+       return 'red';
+    }
+
   }
 
 
@@ -276,14 +336,32 @@ function bubbleChart() {
     var content = '<span class="name">Title: </span><span class="value">' +
                   d.name +
                   '</span><br/>' +
-                  '<span class="name">Amount: </span><span class="value">$' +
+                  '<span class="name">Uploaded: </span><span class="value">' +
                   addCommas(d.value) +
-                  '</span><br/>' +
-                  '<span class="name">Year: </span><span class="value">' +
+                  '%</span><br/>' +
+                  '<span class="name">Missions: </span><span class="value">' +
                   d.year +
                   '</span>';
 
     tooltip.showTooltip(content, d3.event);
+  }
+
+  function showModal(d) {
+    // change outline to indicate hover state.
+    $("#cmodal").toggle();
+    d3.select(this).attr('stroke', 'black');
+
+    var content = '<span class="name">Title: </span><span class="value">' +
+                  d.name +
+                  '</span><br/>' +
+                  '<span class="name">Uploaded: </span><span class="value">' +
+                  addCommas(d.value) +
+                  '%</span><br/>' +
+                  '<span class="name">Missions: </span><span class="value">' +
+                  d.year +
+                  '</span>';
+
+    // tooltip.showTooltip(content, d3.event);
   }
 
   /*
@@ -292,7 +370,7 @@ function bubbleChart() {
   function hideDetail(d) {
     // reset outline
     d3.select(this)
-      .attr('stroke', d3.rgb(fillColor(d.group)).darker());
+      .attr('stroke', d3.rgb(fillColor(d.percentage)).darker());
 
     tooltip.hideTooltip();
   }
@@ -332,8 +410,9 @@ function display(error, data) {
   if (error) {
     console.log(error);
   }
-
-  myBubbleChart('#vis', data);
+  
+  myBubbleChart('#vis', data.data.rows.results);
+  //console.log(data.data.rows.results)
 }
 
 /*
@@ -341,13 +420,13 @@ function display(error, data) {
  */
 function setupButtons() {
   d3.select('#toolbar')
-    .selectAll('.button')
+    .selectAll('.nav-item')
     .on('click', function () {
       // Remove active class from all buttons
-      d3.selectAll('.button').classed('active', false);
+      d3.selectAll('.nav-item').classed('active', false);
       // Find the button just clicked
       var button = d3.select(this);
-
+        
       // Set it as the active button
       button.classed('active', true);
 
@@ -378,7 +457,8 @@ function addCommas(nStr) {
 }
 
 // Load the data.
-d3.csv('data/gates_money.csv', display);
+//d3.csv('data/gates_money.csv', display);
+d3.json("https://apps1.unep.org/missionreports/missionreport/division/Corporate%20Services%20Division",display);
 
 // setup the buttons.
 setupButtons();
